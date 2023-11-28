@@ -1,0 +1,68 @@
+<workflow-app xmlns='uri:oozie:workflow:0.2' name='java-wf'>
+    <start to='mr1' />
+ 
+    <action name='mr1'>
+        <map-reduce>
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <configuration>
+                <property>
+                    <name>mapred.mapper.class</name>
+                    <value>org.myorg.SampleMapper</value>
+                </property>
+                <property>
+                    <name>mapred.reducer.class</name>
+                    <value>org.myorg.SampleReducer</value>
+                </property>
+ 
+                <property>
+                    <name>mapred.input.dir</name>
+                    <value>${inputDir}</value>
+                </property>
+                <property>
+                    <name>mapred.output.dir</name>
+                    <value>${outputDir}/streaming-output</value>
+                </property>
+                <property>
+                  <name>mapred.job.queue.name</name>
+                  <value>${queueName}</value>
+                </property>
+ 
+               <property>
+                  <name>mapred.child.java.opts</name>
+                  <value>-Xmx1024M</value>
+               </property>
+ 
+            </configuration>
+        </map-reduce>
+        <ok to="java1" />
+        <error to="fail" />
+    </action>
+ 
+    <action name='java1'>
+        <java>
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <configuration>
+               <property>
+                    <name>mapred.job.queue.name</name>
+                    <value>${queueName}</value>
+                </property>
+            </configuration>
+            <main-class>org.myorg.MyTest</main-class>
+ 
+            <!-- BEGIN: SNIPPET TO ADD TO ACCESS HADOOP COUNTERS DEFINED IN PREVIOUS ACTIONS -->
+            <arg>${hadoop:counters("mr1")["COMMON"]["COMMON.ERROR_ACCESS_DH_FILES"]}</arg>
+            <!-- END: SNIPPET TO ADD -->
+ 
+            <capture-output/>
+        </java>
+        <ok to="pig1" />
+        <error to="fail" />
+    </action>
+ 
+    <kill name="fail">
+        <value>${wf:errorCode("wordcount")}</value>
+    </kill>
+    <end name='end' />
+</workflow-app>
